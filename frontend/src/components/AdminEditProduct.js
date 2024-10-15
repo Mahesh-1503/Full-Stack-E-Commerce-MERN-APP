@@ -5,8 +5,8 @@ import { FaCloudUploadAlt } from "react-icons/fa";
 import uploadImage from '../helpers/uploadImage';
 import DisplayImage from './DisplayImage';
 import { MdDelete } from "react-icons/md";
-import SummaryApi from '../common';
-import {toast} from 'react-toastify'
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const AdminEditProduct = ({
     onClose,
@@ -14,87 +14,57 @@ const AdminEditProduct = ({
     fetchdata
   }) => {
 
-  const [data,setData] = useState({
+  const [data, setData] = useState({
     ...productData,
-    productName : productData?.productName,
-    brandName : productData?.brandName,
-    category : productData?.category,
-    productImage : productData?.productImage || [],
-    description : productData?.description,
-    price : productData?.price,
-    sellingPrice : productData?.sellingPrice
-  })
-  const [openFullScreenImage,setOpenFullScreenImage] = useState(false)
-  const [fullScreenImage,setFullScreenImage] = useState("")
+    productName: productData?.productName,
+    brandName: productData?.brandName,
+    category: productData?.category,
+    productImage: productData?.productImage || [],
+    description: productData?.description,
+    price: productData?.price,
+    sellingPrice: productData?.sellingPrice
+  });
+  const [openFullScreenImage, setOpenFullScreenImage] = useState(false);
+  const [fullScreenImage, setFullScreenImage] = useState("");
 
+  const handleOnChange = (e) => {
+    const { name, value } = e.target;
+    setData(prev => ({ ...prev, [name]: value }));
+  };
 
-  const handleOnChange = (e)=>{
-      const { name, value} = e.target
-
-      setData((preve)=>{
-        return{
-          ...preve,
-          [name]  : value
-        }
-      })
-  }
-
-  const handleUploadProduct = async(e) => {
-    const file = e.target.files[0]
-    const uploadImageCloudinary = await uploadImage(file)
-
-    setData((preve)=>{
-      return{
-        ...preve,
-        productImage : [ ...preve.productImage, uploadImageCloudinary.url]
-      }
-    })
-  }
-
-  const handleDeleteProductImage = async(index)=>{
-    console.log("image index",index)
-    
-    const newProductImage = [...data.productImage]
-    newProductImage.splice(index,1)
-
-    setData((preve)=>{
-      return{
-        ...preve,
-        productImage : [...newProductImage]
-      }
-    })
-    
-  }
-
-
-  {/**upload product */}
-  const handleSubmit = async(e) =>{
-    e.preventDefault()
-    
-    const response = await fetch(SummaryApi.updateProduct.url,{
-      method : SummaryApi.updateProduct.method,
-      credentials : 'include',
-      headers : {
-        "content-type" : "application/json"
-      },
-      body : JSON.stringify(data)
-    })
-
-    const responseData = await response.json()
-
-    if(responseData.success){
-        toast.success(responseData?.message)
-        onClose()
-        fetchdata()
+  const handleUploadProduct = async (e) => {
+    const file = e.target.files[0];
+    try {
+      const uploadImageCloudinary = await uploadImage(file);
+      setData(prev => ({
+        ...prev,
+        productImage: [...prev.productImage, uploadImageCloudinary.url]
+      }));
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Failed to upload image");
     }
+  };
 
+  const handleDeleteProductImage = (index) => {
+    setData(prev => ({
+      ...prev,
+      productImage: prev.productImage.filter((_, i) => i !== index)
+    }));
+  };
 
-    if(responseData.error){
-      toast.error(responseData?.message)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.put(`${process.env.REACT_APP_API_URL}/api/products/${productData._id}`, data);
+      toast.success("Product updated successfully");
+      fetchdata();
+      onClose();
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast.error("Failed to update product");
     }
-  
-
-  }
+  };
 
   return (
     <div className='fixed w-full  h-full bg-slate-200 bg-opacity-35 top-0 left-0 right-0 bottom-0 flex justify-center items-center'>
